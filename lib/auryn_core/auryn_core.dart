@@ -1,75 +1,65 @@
-/// AURYNCore — Módulo Principal da IA Offline
-/// Responsável por:
-/// - Pipeline central
-/// - Carregamento de memória
-/// - Processamento emocional
-/// - Raciocínio simbólico
-/// - Gateway para módulos de Voz e MemDart
+/// lib/auryn_core/auryn_core.dart
+/// Núcleo da IA AURYN Falante.
+/// Responsável por inicializar módulos, gerenciar ciclo de vida,
+/// manter estados internos e fornecer a função principal de resposta.
 
+import 'package:auryn_offline/auryn_core/states/auryn_states.dart';
+import 'package:auryn_offline/auryn_core/emotion/auryn_emotion.dart';
+import 'package:auryn_offline/auryn_core/personality/auryn_personality.dart';
+import 'package:auryn_offline/auryn_core/processor/auryn_processor.dart';
+import 'package:auryn_offline/auryn_core/runtime/auryn_runtime.dart';
 import 'package:auryn_offline/memdart/memdart.dart';
 
 class AURYNCore {
   static final AURYNCore _instance = AURYNCore._internal();
   factory AURYNCore() => _instance;
+  AURYNCore._internal();
 
-  // Módulos internos
-  late final MemDart mem;
-  final Map<String, dynamic> _state = {};
-  String _mood = "neutral";
+  final AurynStates _states = AurynStates();
+  final AurynEmotion _emotion = AurynEmotion();
+  final AurynPersonality _personality = AurynPersonality();
+  final AurynProcessor _processor = AurynProcessor();
+  final AurynRuntime _runtime = AurynRuntime();
+  final MemDart _memory = MemDart();
 
-  AURYNCore._internal() {
-    mem = MemDart();
-  }
+  bool _initialized = false;
+  bool get isInitialized => _initialized;
 
-  /// Inicializa a IA e carrega estados persistentes
+  /// Inicialização do núcleo — chamada no main()
   Future<void> init() async {
-    await mem.init();
-    _mood = mem.get("auryn_mood", defaultValue: "neutral");
+    if (_initialized) return;
+
+    // 1. Inicializar estados padrão
+    _states.initializeDefaults();
+
+    // 2. Inicializar memória (persistência)
+    await _memory.init();
+
+    // 3. Carregar humor inicial da AURYN
+    _states.set("mood", "calm");
+    _states.set("energy", 80);
+
+    // 4. Aplicar identidade base
+    _personality.generateResponseStyle();
+
+    // 5. Iniciar o runtime pulsante
+    _runtime.start();
+
+    _initialized = true;
   }
 
-  /// Define o estado emocional atual
-  void setMood(String mood) {
-    _mood = mood;
-    mem.set("auryn_mood", mood);
-  }
-
-  /// Retorna o humor atual
-  String get mood => _mood;
-
-  /// Atualiza variáveis internas acessíveis pelos módulos
-  void setState(String key, dynamic value) {
-    _state[key] = value;
-    mem.set("state_$key", value);
-  }
-
-  /// Recupera variáveis internas
-  dynamic getState(String key, {dynamic defaultValue}) {
-    return _state[key] ?? mem.get("state_$key", defaultValue: defaultValue);
-  }
-
-  /// Núcleo de raciocínio local — funciona offline
-  /// Responde perguntas com base em:
-  /// - memória
-  /// - estado emocional
-  /// - padrões salvos
-  String think(String input) {
-    final memoryHint = mem.search(input);
-    return _composeResponse(input, memoryHint);
-  }
-
-  /// Monta a resposta final conforme o humor
-  String _composeResponse(String input, String? memoryHint) {
-    final tone = {
-      "neutral": "",
-      "calm": "com suavidade",
-      "focused": "de forma objetiva",
-      "warm": "com acolhimento",
-    }[_mood];
-
-    if (memoryHint != null && memoryHint.isNotEmpty) {
-      return "Respondendo $tone: $memoryHint";
+  /// Entrada principal utilizada pela UI e pelo sistema de voz
+  String respond(String text) {
+    if (!_initialized) {
+      return "AURYN ainda está despertando… tenta de novo em alguns segundos.";
     }
 
-    return "Eu estou aqui, $tone. Você disse: $input";
+    return _processor.processInput(text);
+  }
+
+  /// Desliga o núcleo (raro de usar)
+  void shutdown() {
+    _runtime.stop();
+    _initialized = false;
   }
 }
