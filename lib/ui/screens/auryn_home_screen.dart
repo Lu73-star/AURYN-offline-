@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:auryn_offline/auryn_core/auryn_core.dart';
+import 'package:auryn_offline/voice/engine/voice_engine.dart';
 
 class AurynHomeScreen extends StatefulWidget {
   const AurynHomeScreen({super.key});
@@ -10,6 +11,7 @@ class AurynHomeScreen extends StatefulWidget {
 
 class _AurynHomeScreenState extends State<AurynHomeScreen> {
   final AURYNCore auryn = AURYNCore();
+  final VoiceEngine voice = VoiceEngine();
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +21,8 @@ class _AurynHomeScreenState extends State<AurynHomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Círculo de energia inicial da AURYN
+
+            // Pulso inicial da AURYN
             Container(
               width: 140,
               height: 140,
@@ -28,13 +31,13 @@ class _AurynHomeScreenState extends State<AurynHomeScreen> {
                 gradient: RadialGradient(
                   colors: [
                     Colors.blueAccent.withOpacity(0.8),
-                    Colors.blueGrey.shade900
+                    Colors.blueGrey.shade900,
                   ],
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.blueAccent.withOpacity(0.6),
-                    blurRadius: 20,
+                    blurRadius: 25,
                     spreadRadius: 4,
                   ),
                 ],
@@ -62,19 +65,26 @@ class _AurynHomeScreenState extends State<AurynHomeScreen> {
               ),
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 40),
 
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blueAccent,
                 foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("AURYN está ouvindo...")),
-                );
+              onPressed: () async {
+                await voice.speak(
+                    "Estou aqui, meu irmão. Pode falar comigo.");
               },
-              child: const Text("Ativar"),
+              child: const Text(
+                "Ativar",
+                style: TextStyle(fontSize: 18),
+              ),
             ),
           ],
         ),
