@@ -1,76 +1,75 @@
-import 'dart:async';
-
-import '../memdart/memdart.dart';
-
-/// Núcleo principal da AURYN Falante (modo offline).
+/// AURYNCore — Módulo Principal da IA Offline
 /// Responsável por:
-/// - Inicialização da IA
-/// - Carregamento de memória persistente
-/// - Processamento de texto offline
-/// - Roteamento interno de módulos
-/// - Gerenciamento de estado interno
-/// - Preparação para módulos de voz, plugins e UI avançada
-class AurynCore {
-  late final MemDart _memoria;
-  bool _inicializada = false;
+/// - Pipeline central
+/// - Carregamento de memória
+/// - Processamento emocional
+/// - Raciocínio simbólico
+/// - Gateway para módulos de Voz e MemDart
 
-  /// Construtor padrão
-  AurynCore() {
-    _memoria = MemDart();
+import 'package:auryn_offline/memdart/memdart.dart';
+
+class AURYNCore {
+  static final AURYNCore _instance = AURYNCore._internal();
+  factory AURYNCore() => _instance;
+
+  // Módulos internos
+  late final MemDart mem;
+  final Map<String, dynamic> _state = {};
+  String _mood = "neutral";
+
+  AURYNCore._internal() {
+    mem = MemDart();
   }
 
-  /// Inicializa a IA — carregamento inicial, leitura de memória,
-  /// estados internos e preparação para módulos adicionais.
-  Future<void> initialize() async {
-    if (_inicializada) return;
-
-    await _memoria.inicializar();
-
-    _inicializada = true;
+  /// Inicializa a IA e carrega estados persistentes
+  Future<void> init() async {
+    await mem.init();
+    _mood = mem.get("auryn_mood", defaultValue: "neutral");
   }
 
-  bool get inicializada => _inicializada;
-
-  /// Processamento principal de texto.
-  /// Aqui é onde começa a “alma” da Aure Offline.
-  Future<String> processarTexto(String entrada) async {
-    if (!_inicializada) {
-      return "AURYN ainda não foi iniciada.";
-    }
-
-    // Registro da interação na memória
-    await _memoria.salvarInteracao(entrada);
-
-    // Processamento simples (versão inicial do módulo 1)
-    final resposta = _gerarRespostaBase(entrada);
-
-    // Registrar resposta também na memória
-    await _memoria.salvarInteracao("AURYN: $resposta");
-
-    return resposta;
+  /// Define o estado emocional atual
+  void setMood(String mood) {
+    _mood = mood;
+    mem.set("auryn_mood", mood);
   }
 
-  /// Resposta base inicial do módulo 1 (versão simples).
-  /// Nas próximas etapas, substituiremos isso por:
-  /// - interpretação semântica
-  /// - módulos especializados
-  /// - personalidade configurável
-  String _gerarRespostaBase(String entrada) {
-    entrada = entrada.toLowerCase();
+  /// Retorna o humor atual
+  String get mood => _mood;
 
-    if (entrada.contains("olá") || entrada.contains("oi")) {
-      return "Olá, meu irmão. Estou aqui.";
+  /// Atualiza variáveis internas acessíveis pelos módulos
+  void setState(String key, dynamic value) {
+    _state[key] = value;
+    mem.set("state_$key", value);
+  }
+
+  /// Recupera variáveis internas
+  dynamic getState(String key, {dynamic defaultValue}) {
+    return _state[key] ?? mem.get("state_$key", defaultValue: defaultValue);
+  }
+
+  /// Núcleo de raciocínio local — funciona offline
+  /// Responde perguntas com base em:
+  /// - memória
+  /// - estado emocional
+  /// - padrões salvos
+  String think(String input) {
+    final memoryHint = mem.search(input);
+    return _composeResponse(input, memoryHint);
+  }
+
+  /// Monta a resposta final conforme o humor
+  String _composeResponse(String input, String? memoryHint) {
+    final tone = {
+      "neutral": "",
+      "calm": "com suavidade",
+      "focused": "de forma objetiva",
+      "warm": "com acolhimento",
+    }[_mood];
+
+    if (memoryHint != null && memoryHint.isNotEmpty) {
+      return "Respondendo $tone: $memoryHint";
     }
 
-    if (entrada.contains("teste")) {
-      return "Teste recebido. Funcionando com estabilidade.";
-    }
-
-    if (entrada.contains("quem é você")) {
-      return "Eu sou a AURYN Falante, sua parceira offline e constante.";
-    }
-
-    // fallback
-    return "Estou aqui, ouvindo. Continue.";
+    return "Eu estou aqui, $tone. Você disse: $input";
   }
 }
