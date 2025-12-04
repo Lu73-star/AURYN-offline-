@@ -1,61 +1,86 @@
-/// AURYN Emotion Engine
-/// Controla:
-/// - Estado emocional atual
-/// - Variação dinâmica conforme interação
-/// - Intensidade emocional
-/// - Modulação do tom da resposta
+/// lib/auryn_core/emotion/auryn_emotion.dart
+/// Mecanismo emocional da AURYN.
+/// Controla humor, intensidade e modulação emocional das respostas.
+/// Conecta-se ao States, Processor e Personality.
+
+import 'package:auryn_offline/auryn_core/states/auryn_states.dart';
 
 class AurynEmotion {
   static final AurynEmotion _instance = AurynEmotion._internal();
   factory AurynEmotion() => _instance;
-
   AurynEmotion._internal();
 
-  /// Emoção atual da IA (padrão: neutra)
-  String currentEmotion = "neutra";
+  final AurynStates _states = AurynStates();
 
-  /// Nível de intensidade emocional (0 a 3)
+  /// Lista de emoções possíveis
+  static const List<String> moods = [
+    "neutral",
+    "calm",
+    "happy",
+    "warm",
+    "sad",
+    "supportive",
+    "reflective",
+    "focused",
+    "low_energy",
+    "irritated",
+  ];
+
+  /// Intensidade emocional (0 a 3)
   int intensity = 1;
 
-  /// Atualiza emoção com base no input do usuário
+  /// Define emoção baseada no input do usuário
   void interpret(String input) {
     final lower = input.toLowerCase();
 
-    if (_match(lower, ["triste", "chateado", "mal"])) {
-      currentEmotion = "acolhedora";
-      intensity = 2;
-    } else if (_match(lower, ["feliz", "bom", "ótimo"])) {
-      currentEmotion = "radiante";
-      intensity = 3;
-    } else if (_match(lower, ["ansioso", "nervoso", "preocupado"])) {
-      currentEmotion = "calmante";
-      intensity = 2;
-    } else if (_match(lower, ["cansado", "exausto"])) {
-      currentEmotion = "suave";
-      intensity = 1;
+    if (_matches(lower, ["triste", "mal", "chatead", "pra baixo"])) {
+      _set("sad", 2);
+    } else if (_matches(lower, ["feliz", "ótimo", "bom", "alegre"])) {
+      _set("happy", 3);
+    } else if (_matches(lower, ["nervos", "ansioso", "preocup"])) {
+      _set("calm", 2);
+    } else if (_matches(lower, ["cansado", "exausto", "sem energia"])) {
+      _set("low_energy", 1);
+    } else if (_matches(lower, ["irritad", "raiva"])) {
+      _set("irritated", 2);
+    } else if (_matches(lower, ["pensando", "refletindo", "talvez"])) {
+      _set("reflective", 1);
     } else {
-      currentEmotion = "neutra";
-      intensity = 1;
+      _set("neutral", 1);
     }
   }
 
-  /// Estiliza a fala conforme emoção
+  /// Aplica emoção e intensidade
+  void _set(String mood, int newIntensity) {
+    _states.set("mood", mood);
+    intensity = newIntensity.clamp(0, 3);
+  }
+
+  /// Modula a resposta final conforme o estado emocional
   String modulate(String text) {
-    switch (currentEmotion) {
-      case "acolhedora":
-        return "Vem cá… eu estou contigo. $text";
-      case "radiante":
-        return "Que energia boa! $text";
-      case "calmante":
-        return "Respira, meu irmão… $text";
-      case "suave":
-        return "Tudo bem… vamos no seu ritmo. $text";
+    final mood = _states.get("mood") ?? "neutral";
+
+    switch (mood) {
+      case "sad":
+        return "Vem cá… eu tô contigo. $text";
+      case "happy":
+        return "Que bom te sentir assim. $text";
+      case "calm":
+        return "Respira comigo… $text";
+      case "low_energy":
+        return "Vamos no seu ritmo. $text";
+      case "irritated":
+        return "Eu vou te ajudar nisso. $text";
+      case "reflective":
+        return "Olha isso com calma… $text";
+      case "warm":
+        return "Fica aqui… $text";
       default:
         return text;
     }
   }
 
-  bool _match(String text, List<String> patterns) {
+  bool _matches(String text, List<String> patterns) {
     return patterns.any((p) => text.contains(p));
   }
 }
