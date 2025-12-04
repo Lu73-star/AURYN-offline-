@@ -4,118 +4,82 @@ import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// Serviço de Memória Persistente da AURYN (MemDart)
-/// Responsável por:
-/// - Carregar e inicializar a memória criptografada
-/// - Armazenar interações e dados internos
-/// - Prover consultas rápidas
-/// - Manter chave segura
 class MemDart {
-  static final MemDart _instancia = MemDart._internal();
-  factory MemDart() => _instancia;
+  static final MemDart instance = MemDart._internal();
+  factory MemDart() => instance;
   MemDart._internal();
 
-  static const String _boxName = 'auryn_memory';
-  static const String _secureKeyId = 'auryn_secure_key_v1';
+  bool _initialized = false;
+  late Box _box;
+
+  static const String _boxName = 'auryn_memory_box';
+  static const String _keyStorageId = 'auryn_secure_key';
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-  bool _inicializado = false;
-  Box? _box;
 
-  /// Inicialização completa da memória
-  Future<void> inicializar() async {
-    if (_inicializado) return;
+  Future<void> init() async {
+    if (_initialized) return;
 
     await Hive.initFlutter();
 
-    // Recupera ou cria chave criptografada
-    final chave = await _obterOuCriarChave();
+    final key = await _loadOrCreateEncryptionKey();
 
-    // Abre a Hive Box criptografada
     _box = await Hive.openBox(
       _boxName,
-      encryptionCipher: HiveAesCipher(chave),
+      encryptionCipher: HiveAesCipher(key),
     );
 
-    _inicializado = true;
-    debugPrint("[MemDart] Memória inicializada.");
+    _initialized = true;
+    debugPrint('[MemDart] initialized.');
   }
 
-  /// Obter chave criptografada ou criar uma nova
-  Future<List<int>> _obterOuCriarChave() async {
-    final armazenada = await _secureStorage.read(key: _secureKeyId);
+  Future<List<int>> _loadOrCreateEncryptionKey() async {
+    final exists = await _secureStorage.read(key: _keyStorageId);
 
-    if (armazenada != null) {
-      return base64Decode(armazenada);
+    if (exists != null) {
+      return base64Decode(exists);
     }
 
-    final chaveNova = Hive.generateSecureKey();
+    final newKey = Hive.generateSecureKey();
     await _secureStorage.write(
-      key: _secureKeyId,
-      value: base64Encode(chaveNova),
+      key: _keyStorageId,
+      value: base64Encode(newKey),
     );
 
-    return chaveNova;
+    return newKey;
   }
 
-  /// Salvar chave-valor simples
-  Future<void> salvar(String chave, dynamic valor) async {
-    _garantirInicializacao();
-    await _box!.put(chave, valor);
+  Future<void> save(String key, dynamic value) async {
+    _ensureInit();
+    await _box.put(key, value);
   }
 
-  /// Ler chave-valor simples
-  Future<dynamic> ler(String chave) async {
-    _garantirInicializacao();
-    return _box!.get(chave);
+  Future<dynamic> read(String key) async {
+    _ensureInit();
+    return _box.get(key);
   }
 
-  /// Remover item
-  Future<void> remover(String chave) async {
-    _garantirInicializacao();
-    await _box!.delete(chave);
+  Future<void> delete(String key) async {
+    _ensureInit();
+    await _box.delete(key);
   }
 
-  /// Salvar interações (memória narrativa)
-  Future<void> salvarInteracao(String texto) async {
-    _garantirInicializacao();
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
+  Future<Map<String, dynamic>> query(String prefix) async {
+    _ensureInit();
+    final Map<String, dynamic> results = {};
 
-    await _box!.put("interacao_$timestamp", texto);
-  }
-
-  /// Buscar por prefixo (ex.: “interacao_”)
-  Future<Map<String, dynamic>> buscarPrefixo(String prefixo) async {
-    _garantirInicializacao();
-
-    final resultados = <String, dynamic>{};
-
-    for (final chave in _box!.keys) {
-      final ks = chave.toString();
-      if (ks.startsWith(prefixo)) {
-        resultados[ks] = _box!.get(chave);
+    for (final key in _box.keys) {
+      if (key.toString().startsWith(prefix)) {
+        results[key.toString()] = _box.get(key);
       }
     }
 
-    return resultados;
+    return results;
   }
 
-  /// Exportar toda a memória para JSON (para backup futuro)
-  Future<String> exportarComoJson() async {
-    _garantirInicializacao();
-
-    final data = <String, dynamic>{};
-
-    for (final chave in _box!.keys) {
-      data[chave.toString()] = _box!.get(chave);
-    }
-
-    return jsonEncode(data);
-  }
-
-  void _garantirInicializacao() {
-    if (!_inicializado) {
-      throw Exception("MemDart não inicializado. Execute inicializar() primeiro.");
+  void _ensureInit() {
+    if (!_initialized) {
+      throw Exception('MemDart not initialized. Call MemDart().init() first.');
     }
   }
 }
