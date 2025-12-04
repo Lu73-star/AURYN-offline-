@@ -1,0 +1,36 @@
+workflows:
+  auryn-android:
+    name: Auryn Android Release
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      vars:
+        OPENAI_API_KEY: EncryptedTextHere # configure no Codemagic UI como variável segura
+    scripts:
+      - name: Flutter pub get
+        script: |
+          flutter pub get
+      - name: Build Android AAB
+        script: |
+          flutter build appbundle --release
+    artifacts:
+      - build/app/outputs/bundle/release/app-release.aab
+      - build/app/outputs/apk/release/app-release.apk
+    publishing:
+      google_play:
+        service_account_credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT # opcional (configurar no Codemagic)
+        track: internal
+
+  auryn-web:
+    name: Auryn Web Release
+    environment:
+      flutter: stable
+    scripts:
+      - name: Install dependencies
+        script: |
+          flutter pub get
+      - name: Build web
+        script: |
+          flutter build web --release
+    artifacts:
+      - build/web/**/*
