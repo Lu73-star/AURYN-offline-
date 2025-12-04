@@ -1,3 +1,0 @@
-git add .
-git commit -m "feat: add AurynCore, MemDart, main and pubspec"
-git push origin main
