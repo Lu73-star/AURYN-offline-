@@ -323,12 +323,12 @@ class PersonaManager {
   }
 
   /// Import a profile
-  void importProfile(Map<String, dynamic> data, {bool setAsCurrent = false}) {
+  Future<void> importProfile(Map<String, dynamic> data, {bool setAsCurrent = false}) async {
     final profile = PersonalityProfile.fromMap(data);
     addProfile(profile);
     
     if (setAsCurrent) {
-      switchProfile(profile.id, reason: 'imported');
+      await switchProfile(profile.id, reason: 'imported');
     }
   }
 

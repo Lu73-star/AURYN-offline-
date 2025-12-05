@@ -167,12 +167,12 @@ void main() {
       expect(modulated.arousal, lessThan(highArousalEmotion.arousal));
     });
 
-    test('deve ajustar trait e atualizar lastModified', () {
+    test('deve ajustar trait e atualizar lastModified', () async {
       final profile = PersonalityProfile.aurynDefault();
       final oldModified = profile.lastModified;
 
       // Wait a bit to ensure timestamp difference
-      Future.delayed(const Duration(milliseconds: 10));
+      await Future.delayed(const Duration(milliseconds: 10));
 
       final adjusted = profile.adjustTrait('openness', 0.10);
 

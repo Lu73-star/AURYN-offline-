@@ -4,7 +4,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:auryn_offline/auryn_core/personality/persona_manager.dart';
 import 'package:auryn_offline/auryn_core/personality/personality_profile.dart';
+import 'package:auryn_offline/auryn_core/personality/personality_traits.dart';
 import 'package:auryn_offline/auryn_core/personality/personality_events.dart';
+import 'package:auryn_offline/auryn_core/personality/dialog_style.dart';
 import 'package:auryn_offline/auryn_core/emotion/emotion_state.dart';
 import 'package:auryn_offline/auryn_core/personality/behavior_shaping.dart';
 
@@ -233,7 +235,7 @@ void main() {
       expect(exported.containsKey('supportive'), isTrue);
     });
 
-    test('deve importar profile', () {
+    test('deve importar profile', () async {
       final profileData = {
         'id': 'imported',
         'name': 'Imported Profile',
@@ -246,7 +248,7 @@ void main() {
         'lastModified': DateTime.now().toIso8601String(),
       };
 
-      manager.importProfile(profileData);
+      await manager.importProfile(profileData);
 
       final imported = manager.getProfile('imported');
       expect(imported, isNotNull);
@@ -266,7 +268,7 @@ void main() {
         'lastModified': DateTime.now().toIso8601String(),
       };
 
-      manager.importProfile(profileData, setAsCurrent: true);
+      await manager.importProfile(profileData, setAsCurrent: true);
 
       expect(manager.currentProfile.id, equals('imported_current'));
     });
