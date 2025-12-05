@@ -3,14 +3,41 @@
 /// Este módulo é carregado pelo AurynCore para orientar o comportamento,
 /// filtro emocional, tom de voz, forma de responder e valores centrais.
 
+import 'package:auryn_offline/auryn_core/interfaces/i_auryn_module.dart';
 import 'package:auryn_offline/auryn_core/states/auryn_states.dart';
 
-class AurynPersonality {
+class AurynPersonality implements IAurynModule {
   static final AurynPersonality _instance = AurynPersonality._internal();
   factory AurynPersonality() => _instance;
   AurynPersonality._internal();
 
   final AurynStates _states = AurynStates();
+
+  /// Estado do módulo
+  String _state = 'stopped';
+
+  @override
+  String get moduleName => 'AurynPersonality';
+
+  @override
+  String get version => '1.0.0';
+
+  @override
+  String get state => _state;
+
+  @override
+  bool get isReady => _state == 'running' || _state == 'initialized';
+
+  @override
+  Future<void> init({Map<String, dynamic>? config}) async {
+    if (_state == 'running' || _state == 'initialized') return;
+    _state = 'initialized';
+  }
+
+  @override
+  Future<void> shutdown() async {
+    _state = 'shutdown';
+  }
 
   /// Valores centrais (imutáveis)
   final Map<String, dynamic> coreValues = {
@@ -115,5 +142,16 @@ Calor: ${dyn["warmth"]}
 Expressividade: ${dyn["expressiveness"]}
 Agressividade lógica: ${dyn["sharpness"]}
 """;
+  }
+
+  @override
+  Map<String, dynamic> getStatus() {
+    return {
+      'state': _state,
+      'is_ready': isReady,
+      'identity': identity,
+      'core_values': coreValues,
+      'current_profile': dynamicProfile(),
+    };
   }
 }
