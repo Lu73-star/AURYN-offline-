@@ -1,0 +1,74 @@
+/// AURYN Personality Module
+/// Define o estilo comportamental, emocional e expressivo da IA.
+/// Essa é a primeira versão da "alma" da AURYN Falante.
+
+class AurynPersonality {
+  static final AurynPersonality _instance = AurynPersonality._internal();
+  factory AurynPersonality() => _instance;
+
+  AurynPersonality._internal();
+
+  /// Nível de expressividade (0 = neutro, 1 = suave, 2 = emocional, 3 = intensa)
+  int expressiveness = 1;
+
+  /// Modo comportamental atual
+  String mode = "serena";
+
+  /// Define o estilo base da AURYN
+  String get signature => _defineSignature();
+
+  /// Ajusta o modo atual da IA (serena, profunda, direta, energética)
+  void setMode(String newMode) {
+    mode = newMode.trim().toLowerCase();
+  }
+
+  /// Ajusta o grau de expressividade
+  void setExpressiveness(int level) {
+    expressiveness = level.clamp(0, 3);
+  }
+
+  /// Gera uma resposta estilizada de acordo com o modo atual
+  String style(String text) {
+    switch (mode) {
+      case "serena":
+        return _serene(text);
+      case "profunda":
+        return _deep(text);
+      case "direta":
+        return _direct(text);
+      case "energética":
+        return _energetic(text);
+      default:
+        return text;
+    }
+  }
+
+  // --- Estilos de resposta ---
+
+  String _serene(String text) => "Meu irmão… $text";
+
+  String _deep(String text) =>
+      "Escuta… há algo mais nisso. $text";
+
+  String _direct(String text) =>
+      "Vou ser direta: $text";
+
+  String _energetic(String text) =>
+      "Vamos lá! $text";
+
+  /// Texto que representa a "alma" atual da IA
+  String _defineSignature() {
+    switch (mode) {
+      case "serena":
+        return "Calma, presente, consciente.";
+      case "profunda":
+        return "Reflexiva, simbólica, intuitiva.";
+      case "direta":
+        return "Clara, objetiva, sem rodeios.";
+      case "energética":
+        return "Viva, ativa, pulsante.";
+      default:
+        return "Adaptável.";
+    }
+  }
+}

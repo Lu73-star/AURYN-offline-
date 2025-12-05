@@ -1,0 +1,43 @@
+name: auryn_offline
+description: "AURYN Falante Offline — Módulo 1 (AurynCore)"
+version: 0.1.0
+publish_to: "none"
+
+environment:
+  sdk: ">=2.17.0 <4.0.0"
+
+dependencies:
+  flutter_tts: ^3.6.3
+
+  # Processamento de voz (TTS e STT offline quando possível)
+  flutter_tts: ^3.8.2
+  speech_to_text: ^6.3.0
+
+  # Armazenamento local persistente da memória
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.2
+
+  # NLP / utilidades
+  collection: ^1.17.1
+  uuid: ^3.0.7
+
+  # Execução isolada (AURYNCore precisa disso)
+  isolates: ^2.0.3
+
+  # Controle reativo leve
+  provider: ^6.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  hive_generator: ^2.0.1
+  build_runner: ^2.3.3
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/audio/
+    - assets/config/
+    - assets/system/
