@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:auryn_core/awareness/context_manager.dart';
+import 'package:auryn_offline/auryn_core/awareness/context_manager.dart';
 
 void main() {
   group('ContextManager', () {
