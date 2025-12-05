@@ -324,6 +324,17 @@ class PersonaManager {
 
   /// Import a profile
   Future<void> importProfile(Map<String, dynamic> data, {bool setAsCurrent = false}) async {
+    // Validate essential fields
+    if (data['id'] == null || (data['id'] as String).isEmpty) {
+      throw ArgumentError('Profile data must include a non-empty "id" field');
+    }
+    if (data['name'] == null || (data['name'] as String).isEmpty) {
+      throw ArgumentError('Profile data must include a non-empty "name" field');
+    }
+    if (data['traits'] == null) {
+      throw ArgumentError('Profile data must include a "traits" field');
+    }
+    
     final profile = PersonalityProfile.fromMap(data);
     addProfile(profile);
     

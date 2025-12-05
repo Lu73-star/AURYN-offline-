@@ -273,6 +273,41 @@ void main() {
       expect(manager.currentProfile.id, equals('imported_current'));
     });
 
+    test('deve lançar erro para dados de import inválidos', () async {
+      // Missing id
+      final invalidData1 = {
+        'name': 'Test',
+        'traits': PersonalityTraits.aurynDefault().toMap(),
+      };
+      
+      expect(
+        () => manager.importProfile(invalidData1),
+        throwsArgumentError,
+      );
+
+      // Missing name
+      final invalidData2 = {
+        'id': 'test',
+        'traits': PersonalityTraits.aurynDefault().toMap(),
+      };
+      
+      expect(
+        () => manager.importProfile(invalidData2),
+        throwsArgumentError,
+      );
+
+      // Missing traits
+      final invalidData3 = {
+        'id': 'test',
+        'name': 'Test',
+      };
+      
+      expect(
+        () => manager.importProfile(invalidData3),
+        throwsArgumentError,
+      );
+    });
+
     test('deve obter debug info', () {
       final debugInfo = manager.getDebugInfo();
 

@@ -8,6 +8,16 @@ import 'package:auryn_offline/auryn_core/emotion/emotion_state.dart';
 import 'package:auryn_offline/auryn_core/personality/personality_traits.dart';
 import 'package:auryn_offline/auryn_core/personality/dialog_style.dart';
 
+/// Constants for emotion modulation thresholds
+class _ModulationThresholds {
+  static const double highNeuroticismThreshold = 0.6;
+  static const double neuroticismAmplificationFactor = 2.5;
+  static const double lowNeuroticismThreshold = 0.4;
+  static const double highAgreeablenessThreshold = 0.7;
+  static const double highExtraversionThreshold = 0.7;
+  static const double lowExtraversionThreshold = 0.4;
+}
+
 class PersonalityProfile {
   /// Unique identifier for this profile
   final String id;
@@ -203,34 +213,36 @@ class PersonalityProfile {
     // Personality traits influence how emotions are expressed/experienced
     
     // High neuroticism amplifies negative emotions
-    if (state.isNegative && traits.neuroticism > 0.6) {
-      final amplification = ((traits.neuroticism - 0.6) * 2.5).round();
+    if (state.isNegative && traits.neuroticism > _ModulationThresholds.highNeuroticismThreshold) {
+      final amplification = ((traits.neuroticism - _ModulationThresholds.highNeuroticismThreshold) * 
+          _ModulationThresholds.neuroticismAmplificationFactor).round();
       return state.copyWith(
         intensity: (state.intensity + amplification).clamp(0, 3),
       );
     }
 
     // Low neuroticism dampens extreme emotions
-    if (traits.neuroticism < 0.4 && state.intensity >= 2) {
+    if (traits.neuroticism < _ModulationThresholds.lowNeuroticismThreshold && state.intensity >= 2) {
       return state.copyWith(
         intensity: state.intensity - 1,
       );
     }
 
     // High agreeableness biases toward positive interpretations
-    if (traits.agreeableness > 0.7 && state.valence == 0 && state.intensity <= 1) {
+    if (traits.agreeableness > _ModulationThresholds.highAgreeablenessThreshold && 
+        state.valence == 0 && state.intensity <= 1) {
       return state.copyWith(valence: 1);
     }
 
     // High extraversion increases arousal
-    if (traits.extraversion > 0.7 && state.arousal < 2) {
+    if (traits.extraversion > _ModulationThresholds.highExtraversionThreshold && state.arousal < 2) {
       return state.copyWith(
         arousal: (state.arousal + 1).clamp(0, 3),
       );
     }
 
     // Low extraversion decreases arousal
-    if (traits.extraversion < 0.4 && state.arousal > 1) {
+    if (traits.extraversion < _ModulationThresholds.lowExtraversionThreshold && state.arousal > 1) {
       return state.copyWith(
         arousal: (state.arousal - 1).clamp(0, 3),
       );
