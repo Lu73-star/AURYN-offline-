@@ -132,7 +132,16 @@ class RuntimeManager implements IRuntimeManager {
       try {
         callback();
       } catch (e) {
-        // Ignora erros em callbacks para não quebrar o loop
+        // Log erro mas não quebra o loop
+        _eventBus.publish(AurynEvent(
+          type: AurynEventType.error,
+          source: moduleName,
+          data: {
+            'error': 'Callback error in runtime loop',
+            'details': e.toString(),
+          },
+          priority: 9,
+        ));
       }
     }
 

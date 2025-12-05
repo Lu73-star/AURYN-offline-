@@ -49,7 +49,12 @@ class MemDart {
 
   Future<void> save(String key, dynamic value, {String? tag}) async {
     _ensureInit();
+    
+    // Salvar via adapter (principal)
     await _adapter.save(key, value);
+    
+    // Salvar em box legado para compatibilidade (pode ser removido no futuro)
+    // TODO: Remover dual-write após migração completa
     await _box.put(key, value);
 
     // Indexar por prefixo (primeiros 3 caracteres)

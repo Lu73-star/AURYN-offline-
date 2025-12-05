@@ -158,9 +158,7 @@ class AurynEmotion implements IEmotionModule {
 
   /// Adiciona estado ao histórico emocional
   void _addToHistory(String mood, int intensity) {
-    final previousState = _emotionalHistory.isNotEmpty 
-        ? _emotionalHistory.last 
-        : null;
+    final previousState = _getLastEmotionalState();
 
     final newState = EmotionalState(
       mood: mood,
@@ -172,6 +170,11 @@ class AurynEmotion implements IEmotionModule {
     if (_emotionalHistory.length > _maxHistorySize) {
       _emotionalHistory.removeAt(0);
     }
+  }
+
+  /// Helper para obter último estado emocional de forma segura
+  EmotionalState? _getLastEmotionalState() {
+    return _emotionalHistory.isNotEmpty ? _emotionalHistory.last : null;
   }
 
   /// Retorna histórico emocional

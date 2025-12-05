@@ -2,6 +2,7 @@
 /// Sistema de logging simples para o AURYN Core.
 /// Totalmente offline, sem envio de telemetria.
 
+import 'dart:collection';
 import 'package:flutter/foundation.dart';
 
 /// Níveis de log
@@ -22,8 +23,8 @@ class AurynLogger {
   /// Nível mínimo de log (por padrão, info)
   LogLevel minLevel = LogLevel.info;
 
-  /// Buffer de logs recentes
-  final List<Map<String, dynamic>> _logBuffer = [];
+  /// Buffer de logs recentes (usando Queue para O(1) removeFirst)
+  final Queue<Map<String, dynamic>> _logBuffer = Queue<Map<String, dynamic>>();
   final int _maxBufferSize = 100;
 
   /// Habilita/desabilita logs
@@ -72,10 +73,10 @@ class AurynLogger {
       'data': data,
     };
 
-    // Adicionar ao buffer
+    // Adicionar ao buffer (Queue para melhor performance)
     _logBuffer.add(logEntry);
     if (_logBuffer.length > _maxBufferSize) {
-      _logBuffer.removeAt(0);
+      _logBuffer.removeFirst();
     }
 
     // Print no console em modo debug
@@ -91,7 +92,7 @@ class AurynLogger {
 
   /// Retorna os logs recentes
   List<Map<String, dynamic>> getRecentLogs({int? limit}) {
-    if (limit == null) return List.unmodifiable(_logBuffer);
+    if (limit == null) return _logBuffer.toList();
     return _logBuffer.take(limit).toList();
   }
 

@@ -45,11 +45,12 @@ class MemoryIndex {
     return _tagIndex[tag] ?? [];
   }
 
-  /// Busca por intervalo de tempo
+  /// Busca por intervalo de tempo (inclusive)
   List<String> searchByTimeRange(DateTime start, DateTime end) {
     final results = <String>[];
     for (final entry in _timeIndex.entries) {
-      if (entry.key.isAfter(start) && entry.key.isBefore(end)) {
+      if ((entry.key.isAfter(start) || entry.key.isAtSameMomentAs(start)) &&
+          (entry.key.isBefore(end) || entry.key.isAtSameMomentAs(end))) {
         results.addAll(entry.value);
       }
     }

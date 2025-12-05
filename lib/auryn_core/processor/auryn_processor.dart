@@ -140,8 +140,15 @@ class AurynProcessor implements IProcessor {
     // 10. Limitar resposta
     styled = _security.enforceOutputLimits(styled);
 
-    // 11. Salvar memória
-    _memory.save("last_response", styled);
+    // 11. Salvar memória (non-blocking - fire and forget)
+    _memory.save("last_response", styled).catchError((e) {
+      // Log erro mas não bloqueia processamento
+      _eventBus.publish(AurynEvent(
+        type: AurynEventType.error,
+        source: moduleName,
+        data: {'error': 'Failed to save response to memory', 'details': e.toString()},
+      ));
+    });
     _currentContext!.response = styled;
     _currentContext!.markComplete();
 

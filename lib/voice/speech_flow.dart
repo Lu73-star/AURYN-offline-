@@ -52,18 +52,19 @@ class SpeechFlow {
   void setFlowState(VoiceFlowState newState) {
     if (_state == newState) return;
 
+    final oldState = _state;
     _previousState = _state;
     _state = newState;
 
     // Adicionar ao histórico
-    _addToHistory(_previousState!, newState);
+    _addToHistory(oldState, newState);
 
     // Publicar evento de mudança de estado
     _eventBus.publish(AurynEvent(
       type: AurynEventType.voiceStateChange,
       source: 'SpeechFlow',
       data: {
-        'previous_state': _stateToString(_previousState!),
+        'previous_state': _stateToString(oldState),
         'new_state': _stateToString(newState),
         'timestamp': DateTime.now().toIso8601String(),
       },
