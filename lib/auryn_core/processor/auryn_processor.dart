@@ -1,16 +1,21 @@
 /// lib/auryn_core/processor/auryn_processor.dart
 /// O módulo mais importante: integra NLP + Emotion + Personality + Insight
 /// + Security + States + MemDart para produzir a resposta final da AURYN.
+/// Implementa pipeline de processamento com eventos e tracking de contexto.
 
+import 'package:auryn_offline/auryn_core/interfaces/i_processor.dart';
 import 'package:auryn_offline/auryn_core/nlp/auryn_nlp.dart';
 import 'package:auryn_offline/auryn_core/emotion/auryn_emotion.dart';
-import 'package:auryn_offline/auryn_core/insight/auryn_insight.dart';
+import 'package:auryn_offline/auryn_core/emotion/insight/auryn_insight.dart';
 import 'package:auryn_offline/auryn_core/personality/auryn_personality.dart';
 import 'package:auryn_offline/auryn_core/security/auryn_security.dart';
 import 'package:auryn_offline/auryn_core/states/auryn_states.dart';
+import 'package:auryn_offline/auryn_core/events/event_bus.dart';
+import 'package:auryn_offline/auryn_core/events/auryn_event.dart';
+import 'package:auryn_offline/auryn_core/models/processing_context.dart';
 import 'package:auryn_offline/memdart/memdart.dart';
 
-class AurynProcessor {
+class AurynProcessor implements IProcessor {
   static final AurynProcessor _instance = AurynProcessor._internal();
   factory AurynProcessor() => _instance;
   AurynProcessor._internal();
@@ -22,14 +27,84 @@ class AurynProcessor {
   final AurynSecurity _security = AurynSecurity();
   final AurynStates _states = AurynStates();
   final MemDart _memory = MemDart();
+  final EventBus _eventBus = EventBus();
 
-  /// Processo principal: entrada → análise → resposta final
+  /// Estado do módulo
+  String _state = 'stopped';
+
+  /// Contexto de processamento atual
+  ProcessingContext? _currentContext;
+
+  @override
+  String get moduleName => 'AurynProcessor';
+
+  @override
+  String get version => '1.0.0';
+
+  @override
+  String get state => _state;
+
+  @override
+  bool get isReady => _state == 'running' || _state == 'initialized';
+
+  @override
+  Future<void> init({Map<String, dynamic>? config}) async {
+    if (_state == 'running' || _state == 'initialized') return;
+    _state = 'initialized';
+  }
+
+  @override
+  Future<void> shutdown() async {
+    _state = 'shutdown';
+    _currentContext = null;
+  }
+
+  /// Valida se a entrada pode ser processada
+  @override
+  bool validateInput(String input) {
+    final sanitized = _security.sanitize(input);
+    return _security.validateInput(sanitized);
+  }
+
+  /// Retorna o contexto atual do processamento
+  @override
+  Map<String, dynamic> getCurrentContext() {
+    if (_currentContext == null) {
+      return {'status': 'no_active_context'};
+    }
+    return _currentContext!.toMap();
+  }
+
+  /// Processo principal: entrada → análise → resposta final (síncrono)
+  @override
   String processInput(String inputRaw) {
+    // Publica evento de início
+    _eventBus.publish(AurynEvent(
+      type: AurynEventType.inputReceived,
+      source: moduleName,
+      data: {'input_length': inputRaw.length},
+      priority: 8,
+    ));
+
+    _eventBus.publish(AurynEvent(
+      type: AurynEventType.processingStart,
+      source: moduleName,
+      data: {'timestamp': DateTime.now().toIso8601String()},
+      priority: 7,
+    ));
+
     // 1. Sanitizar entrada
     final sanitized = _security.sanitize(inputRaw);
     if (!_security.validateInput(sanitized)) {
+      _publishProcessingEnd(false, 'validation_failed');
       return "Fala comigo de outro jeito… esse não deu certo.";
     }
+
+    // Criar contexto de processamento
+    _currentContext = ProcessingContext(
+      rawInput: inputRaw,
+      sanitizedInput: sanitized,
+    );
 
     // 2. Guardar "last_input"
     _states.set("last_input", sanitized);
@@ -37,9 +112,13 @@ class AurynProcessor {
     // 3. Aplicar NLP + extrair entidades
     final parsed = _nlp.interpretAndApply(sanitized);
     final intent = parsed["intent"] ?? "unknown";
+    _currentContext!.intent = intent;
+    _currentContext!.entities = parsed["entities"] ?? {};
 
     // 4. Interpretar emoção
     _emotion.interpret(sanitized);
+    _currentContext!.mood = _states.get("mood");
+    _currentContext!.energy = _states.get("energy");
 
     // 5. Gerar insight conforme intenção
     final insight = _insight.generateInsight(intent);
@@ -62,9 +141,47 @@ class AurynProcessor {
     styled = _security.enforceOutputLimits(styled);
 
     // 11. Salvar memória
-    _memory.set("last_response", styled);
+    _memory.save("last_response", styled);
+    _currentContext!.response = styled;
+    _currentContext!.markComplete();
+
+    // Publicar evento de conclusão
+    _publishProcessingEnd(true, 'success');
+
+    _eventBus.publish(AurynEvent(
+      type: AurynEventType.outputGenerated,
+      source: moduleName,
+      data: {
+        'intent': intent,
+        'output_length': styled.length,
+        'mood': _currentContext!.mood,
+      },
+      priority: 8,
+    ));
 
     return styled;
+  }
+
+  /// Processo assíncrono de entrada
+  @override
+  Future<String> processInputAsync(String input) async {
+    // Para este módulo, o processamento é rápido o suficiente para ser síncrono
+    // Mas a interface permite implementação assíncrona futura
+    return processInput(input);
+  }
+
+  /// Publica evento de fim de processamento
+  void _publishProcessingEnd(bool success, String reason) {
+    _eventBus.publish(AurynEvent(
+      type: AurynEventType.processingEnd,
+      source: moduleName,
+      data: {
+        'success': success,
+        'reason': reason,
+        'timestamp': DateTime.now().toIso8601String(),
+      },
+      priority: 7,
+    ));
   }
 
   /// Respostas base conforme intenção
@@ -99,5 +216,15 @@ class AurynProcessor {
     final expressiveness = style["expressiveness"];
 
     return "Meu irmão… $text";
+  }
+
+  @override
+  Map<String, dynamic> getStatus() {
+    return {
+      'state': _state,
+      'is_ready': isReady,
+      'has_active_context': _currentContext != null,
+      'current_context': getCurrentContext(),
+    };
   }
 }
