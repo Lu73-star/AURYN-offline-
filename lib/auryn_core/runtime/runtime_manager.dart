@@ -5,50 +5,74 @@
 /// - Execução de tarefas paralelas
 /// - Comunicação com MemDart e AurynCore
 
-import 'dart:async';
+import 'package:auryn_offline/auryn_core/auryn_core.dart';
+
+class RuntimeManager {
+  static final RuntimeManager _instance = RuntimeManager._internal();
+  factory /// AURYN Runtime Manager
+/// Controla o ciclo de vida interno da IA de forma determinística.
+/// NÃO depende de Timer nem de relógio real.
+///
+/// Responsabilidades:
+/// - Orquestrar o avanço do runtime por ticks explícitos
+/// - Integrar o runtime com o AURYNCore
+/// - Permitir testes totalmente determinísticos
+
 import 'package:auryn_offline/auryn_core/auryn_core.dart';
 
 class RuntimeManager {
   static final RuntimeManager _instance = RuntimeManager._internal();
   factory RuntimeManager() => _instance;
-
-  /// Timer interno que simula "pulsos" da IA
-  Timer? _pulseTimer;
-
-  /// Intervalo entre pulsos internos (em ms)
-  final int pulseIntervalMs = 5000; // 5 segundos
-
   RuntimeManager._internal();
 
-  /// Inicia o runtime da IA
-  void start() {
-    stop(); // evita duplicações
+  bool _running = false;
+  int _currentTick = 0;
 
-    _pulseTimer = Timer.periodic(
-      Duration(milliseconds: pulseIntervalMs),
-      (timer) => _onPulse(),
-    );
+  /// Inicia o runtime (sem Timer)
+  void start() {
+    _running = true;
   }
 
   /// Para o runtime
   void stop() {
-    _pulseTimer?.cancel();
-    _pulseTimer = null;
+    _running = false;
   }
 
-  /// Evento executado a cada pulso interno
-  void _onPulse() {
+  /// Executa um único tick determinístico
+  void tick() {
+    if (!_running) return;
+
+    _currentTick++;
+    _onTick(_currentTick);
+  }
+
+  /// Avança múltiplos ticks de forma explícita (ideal para testes)
+  void advanceTicks(int count) {
+    if (count <= 0) return;
+
+    for (int i = 0; i < count; i++) {
+      tick();
+    }
+  }
+
+  /// Lógica executada a cada tick
+  void _onTick(int tick) {
     final core = AURYNCore();
 
-    // Exemplo básico de modulação emocional futura
+    // Exemplo simples de evolução de estado
     if (core.mood == "neutral") {
       core.setMood("stable");
     }
 
-    // Futuro: integrar detecção de som ambiente, vibração, energia emocional
-    // Futuro: integrar AurynPulse (batimento visual do VoxFuture)
+    // 🔮 Futuro:
+    // - Integração com AurynRuntime (estado puro)
+    // - Integração com AurynPulse
+    // - Integração com fila de eventos
   }
 
-  /// Verifica se o runtime está ativo
-  bool get isRunning => _pulseTimer != null;
+  /// Tick atual do runtime
+  int get currentTick => _currentTick;
+
+  /// Indica se o runtime está ativo
+  bool get isRunning => _running;
 }
